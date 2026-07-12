@@ -61,19 +61,19 @@
       transform: translateX(100%);
     }
 
-    #yearSearch {
+    #signTypeSearch {
       width: 100%;
       padding: 6px;
       margin-bottom: 8px;
       box-sizing: border-box;
     }
 
-    .year-actions {
+    .signType-actions {
       display: flex;
       margin-bottom: 8px;
     }
 
-    .year-actions button {
+    .signType-actions button {
       width: 100%;
     }
 
@@ -107,7 +107,7 @@
     }
 
     #filters,
-    #yearFilters {
+    #signTypeFilters {
       /* overflow-y: auto; */
       border-top: 1px solid #ddd;
       padding-top: 8px;
@@ -120,7 +120,7 @@
       margin-bottom: 4px;
     }
 
-    #yearFilters {
+    #signTypeFilters {
     max-height: 200px;
     overflow-y: auto;
     border-top: 1px solid #ddd;
@@ -128,7 +128,7 @@
     margin-top: 10px;
     }
 
-    #yearFilters label {
+    #signTypeFilters label {
         display: block;
         margin-bottom: 4px;
     }
@@ -191,23 +191,23 @@
   <div id="counter">0 / 0 selected</div>
 
   <!-- Category filter -->
-  <h3>Type VRI</h3>
+  <h3>Kies bron</h3>
   <div id="filters"></div>
 
-  <!-- Year filter -->
-  <h3>Jaar van Aanleg</h3>
+  <!-- signType filter -->
+  <h3>Kies bordtype</h3>
 
   <input
     type="text"
-    id="yearSearch"
-    placeholder="Search years..."
+    id="signTypeSearch"
+    placeholder="Search signTypes..."
   />
 
-  <div class="year-actions">
-    <button id="clearYears">Clear</button>
+  <div class="signType-actions">
+    <button id="clearsignTypes">Clear</button>
   </div>
 
-  <div id="yearFilters"></div>
+  <div id="signTypeFilters"></div>
 
 </div>
 
@@ -225,11 +225,17 @@
   // 1. INITIAL MAP SETUP
   // =========================================================
 
+
   const map = L.map('map').setView([52.375, 4.89], 12);
+
+    L.control.attribution({
+    position: 'bottomleft',
+    prefix: false
+  }).addTo(map);
 
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
 
@@ -239,7 +245,7 @@
 
   // Stores: category -> Leaflet LayerGroup
   const groups = {};
-  const years = new Set();
+  const signTypes = new Set();
   const allMarkers = [];
 
     // =========================================================
@@ -253,7 +259,7 @@
   // =========================================================
 
   //fetch('vri.geojson') // https://maps.amsterdam.nl/open_geodata/?k=182
-    fetch('signs_C21.geojson')
+    fetch('signs.geojson')
     .then(res => res.json())
     .then(data => {
 
@@ -294,17 +300,18 @@
         // Extract category (used for filtering)
         const category = feature.properties.class;
         console.log(category)
-        const year =
+        const signType =
         feature.properties.rvvCode
             ? String(feature.properties.rvvCode)
-            : "Unknown";
+            : "onbekend";
 
-        const my_url = feature.properties.panoramax_url;
+        const panoramax_url = feature.properties.panoramax_url;
+        const george_url = feature.properties.george_map_url;
 
         const direction = feature.properties.direction;
         console.log(direction)
 
-        years.add(year);
+        signTypes.add(signType);
 
         // Create layer group per category if it doesn't exist
         if (!groups[category]) {
@@ -322,9 +329,51 @@
                                   })                                                             
 
         marker.category = category;
-        marker.year = year;
+        marker.signType = signType;
 
-        marker.bindPopup(`<a href="${my_url}" target="_blank" rel="noopener noreferrer">${my_url}</a>`);
+        const popupParts = [];
+
+        // Title section
+        popupParts.push(`
+          <div>
+            <strong>${category}</strong><br>
+            rvv code: ${signType}
+          </div>
+        `);
+
+        // Panoramax URL, only if it exists
+        if (
+          panoramax_url &&
+          panoramax_url !== "none" &&
+          panoramax_url !== "None"
+        ) {
+          popupParts.push(`
+            <div>
+              <strong>Panoramax:</strong><br>
+              <a href="${panoramax_url}" target="_blank" rel="noopener noreferrer">
+                ${panoramax_url}
+              </a>
+            </div>
+          `);
+        }
+
+        // George URL, only if it exists
+        if (
+          george_url &&
+          george_url !== "none" &&
+          george_url !== "None"
+        ) {
+          popupParts.push(`
+            <div>
+              <strong>George:</strong><br>
+              <a href="${george_url}" target="_blank" rel="noopener noreferrer">
+                ${george_url}
+              </a>
+            </div>
+          `);
+        }
+
+        marker.bindPopup(popupParts.join("<hr>"));
 
         // Add marker to correct category group
         groups[category].addLayer(marker);
@@ -338,7 +387,7 @@
       // 1. build sidebar checkboxes
       // 2. enable filtering
       createCheckboxes();
-      createYearCheckboxes();
+      createsignTypeCheckboxes();
       updateFilters();
 
     })
@@ -374,16 +423,16 @@
   }
 
 
-  function createYearCheckboxes() {
+  function createsignTypeCheckboxes() {
 
     const container =
-        document.getElementById("yearFilters");
+        document.getElementById("signTypeFilters");
 
     container.innerHTML = "";
 
-    Array.from(years)
+    Array.from(signTypes)
         .sort()
-        .forEach(year => {
+        .forEach(signType => {
 
             const label =
                 document.createElement("label");
@@ -391,9 +440,9 @@
             label.innerHTML = `
                 <input
                     type="checkbox"
-                    value="${year}"
+                    value="${signType}"
                 >
-                ${year}
+                ${signType}
             `;
 
             container.appendChild(label);
@@ -405,11 +454,11 @@
     );
 }
 
-  function filterYearList(e) {
+  function filtersignTypeList(e) {
 
     const q = e.target.value.toLowerCase();
 
-    document.querySelectorAll("#yearFilters label")
+    document.querySelectorAll("#signTypeFilters label")
       .forEach(label => {
 
         label.style.display =
@@ -446,14 +495,14 @@ function updateFilters() {
     ).map(cb => cb.value)
   );
 
-  const selectedYears = new Set(
+  const selectedsignTypes = new Set(
     Array.from(
-      document.querySelectorAll("#yearFilters input:checked")
+      document.querySelectorAll("#signTypeFilters input:checked")
     ).map(cb => cb.value)
   );
 
   console.log("Selected categories:", Array.from(selectedCategories));
-  console.log("Selected years:", Array.from(selectedYears));
+  console.log("Selected signTypes:", Array.from(selectedsignTypes));
 
   let visibleCount = 0;
   const visibleMarkers = [];
@@ -461,9 +510,9 @@ function updateFilters() {
   allMarkers.forEach(marker => {
 
     const categoryMatch = selectedCategories.has(marker.category);
-    const yearMatch = selectedYears.has(marker.year);
+    const signTypeMatch = selectedsignTypes.has(marker.signType);
 
-    const visible = categoryMatch && yearMatch;
+    const visible = categoryMatch && signTypeMatch;
 
     if (visible) {
       visibleCount++;
@@ -514,13 +563,13 @@ function updateFilters() {
     });
 
 
-  document.getElementById("yearSearch")
-  .addEventListener("input", filterYearList);
+  document.getElementById("signTypeSearch")
+  .addEventListener("input", filtersignTypeList);
 
 
-  document.getElementById("clearYears")
+  document.getElementById("clearsignTypes")
     .addEventListener("click", () => {
-      document.querySelectorAll("#yearFilters input")
+      document.querySelectorAll("#signTypeFilters input")
         .forEach(cb => cb.checked = false);
 
       updateFilters();
