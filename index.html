@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>My First Map</title>
+  <title>Breng GEORGE op Orde!</title>
 
   <!-- Leaflet CSS -->
   <link
@@ -100,12 +100,6 @@
       background: #1d4ed8;
     }
 
-    #counter {
-      font-size: 12px;
-      margin-bottom: 8px;
-      color: #444;
-    }
-
     #filters,
     #signTypeFilters {
       /* overflow-y: auto; */
@@ -138,9 +132,58 @@
     }
 
     .arrow-marker {
-    background: transparent;
-    border: none;
+      background: transparent;
+      border: none;
     }
+
+    .marker-wrapper {
+      width: 44px;
+      height: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .marker-image-wrapper {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        margin-bottom: 2px;
+      }
+
+      .marker-signType-image {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+        display: block;
+        position: absolute;
+        z-index: 1;
+      }
+
+      .marker-black-code {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        
+        color: black;
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 1;
+        text-align: center;
+
+        pointer-events: none;
+        white-space: nowrap;
+        z-index: 2;
+      }
+
+    /* .marker-signType-image {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      margin-bottom: 2px;
+    } */
 
     .arrow-wrapper {
       width: 30px;
@@ -172,7 +215,7 @@
      HEADER (title + sidebar toggle)
 ========================================================= -->
 <header>
-  Let's tidy up GEORGE!
+  Breng je borden op orde :)
   <button id="toggleSidebar">☰ Filters</button>
 </header>
 
@@ -181,30 +224,28 @@
 ========================================================= -->
 <div id="sidebar">
 
-  <!-- Bulk actions for Type VRI -->
+    <h3>Kies status:</h3>
+
+  <!-- Bulk actions for choosing sources -->
   <div class="actions">
-    <button id="selectAll">Select all</button>
-    <button id="clearAll">Clear</button>
+    <button id="selectAll">Selecteer alles</button>
+    <button id="clearAll">Deselecteer alles</button>
   </div>
 
-  <!-- Selection counter -->
-  <div id="counter">0 / 0 selected</div>
-
   <!-- Category filter -->
-  <h3>Kies bron</h3>
   <div id="filters"></div>
 
   <!-- signType filter -->
-  <h3>Kies bordtype</h3>
+  <h3>Kies bordtype(s):</h3>
 
   <input
     type="text"
     id="signTypeSearch"
-    placeholder="Search signTypes..."
+    placeholder="Zoek in lijst..."
   />
 
   <div class="signType-actions">
-    <button id="clearsignTypes">Clear</button>
+    <button id="clearsignTypes">Deselecteer alles</button>
   </div>
 
   <div id="signTypeFilters"></div>
@@ -225,17 +266,20 @@
   // 1. INITIAL MAP SETUP
   // =========================================================
 
+  const map = L.map('map', {
+  attributionControl: false,
+  maxZoom: 22
+  }).setView([52.37, 4.91], 15);
 
-  const map = L.map('map').setView([52.375, 4.89], 12);
-
-    L.control.attribution({
+  L.control.attribution({
     position: 'bottomleft',
-    prefix: false
+    prefix: '<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>'
   }).addTo(map);
 
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
+    maxNativeZoom: 19, // open street map only supports up to max zoom 19
+    maxZoom: 22, // leaflet can zoom in further than 19, but will get a bit blurry
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
   }).addTo(map);
 
 
@@ -246,46 +290,137 @@
   // Stores: category -> Leaflet LayerGroup
   const groups = {};
   const signTypes = new Set();
-  const allMarkers = [];
+  // const allMarkers = [];
 
-    // =========================================================
-  // 3. THE DATA ITSELF
+  const featureRecords = [];
+  const markerCache = new Map();
+  const visibleMarkerLayer = L.layerGroup().addTo(map);
+
+
+  // =========================================================
+  // 3. HELPER FUNCTIONS TO CREATE MARKERS
   // =========================================================
 
-    //const signsC21Data = 
-
-  // =========================================================
-  // 3. LOAD GEOJSON + BUILD MARKERS
-  // =========================================================
-
-  //fetch('vri.geojson') // https://maps.amsterdam.nl/open_geodata/?k=182
-    fetch('signs.geojson')
-    .then(res => res.json())
-    .then(data => {
-
-    function getMarkerColor(cat) {
+      function getMarkerColor(cat) {
         if (cat === "match") return "green";
         if (cat === "only_panoramax") return "red";
         if (cat === "only_george") return "blue";
         return "gray";
         }
 
-    function createArrowIcon(direction, color) {
+
+    function hasValue(value) {
+      return (
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== "" &&
+        String(value).toLowerCase() !== "none"
+      );
+    }
+
+    function createArrowIcon(direction, color, signType, blackCode) {
+
+        const imagePath = `svg_verkeersborden/${encodeURIComponent(signType)}.svg`;
+
+        const blackCodeHtml = hasValue(blackCode)
+          ? `<span class="marker-black-code">${blackCode}</span>`
+          : "";
+
         return L.divIcon({
           className: "arrow-marker",
           html: `
-            <div class="arrow-wrapper">
-              <div class="arrow" style="transform: rotate(${direction}deg); border-bottom-color: ${color};"></div>
+            <div class="marker-wrapper">
+
+              <div class="marker-image-wrapper">
+                <img
+                  class="marker-signType-image"
+                  src="${imagePath}"
+                  alt="${signType}"
+                  onerror="this.style.display='none';"
+                >
+                ${blackCodeHtml}
+              </div>
+
+              <div class="arrow-wrapper">
+                <div
+                  class="arrow"
+                  style="transform: rotate(${direction}deg); border-bottom-color: ${color};"
+                ></div>
+              </div>
+
             </div>
           `,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
+          iconSize: [44, 58],
+          iconAnchor: [22, 43]
         });
       }
 
-      //const data = signsC21Data;
+      function createMarker(record) {
 
-      data.features.forEach(feature => {
+          if (markerCache.has(record.id)) {
+            return markerCache.get(record.id);
+          }
+
+          const marker = L.marker([record.lat, record.lng], {
+            icon: createArrowIcon(
+              record.direction,
+              record.color,
+              record.signType,
+              record.blackCode
+            )
+          });
+
+          marker.category = record.category;
+          marker.signType = record.signType;
+
+          const popupParts = [];
+
+          popupParts.push(`
+            <div>
+              <strong>${record.category}</strong><br>
+              rvv code: ${record.signType}
+            </div>
+          `);
+
+          if (hasValue(record.panoramax_url)) {
+            popupParts.push(`
+              <div>
+                <strong>Panoramax:</strong><br>
+                <a href="${record.panoramax_url}" target="_blank" rel="noopener noreferrer">
+                  ${record.panoramax_url}
+                </a>
+              </div>
+            `);
+          }
+
+          if (hasValue(record.george_url)) {
+            popupParts.push(`
+              <div>
+                <strong>George:</strong><br>
+                <a href="${record.george_url}" target="_blank" rel="noopener noreferrer">
+                  ${record.george_url}
+                </a>
+              </div>
+            `);
+          }
+
+          marker.bindPopup(popupParts.join("<hr>"), {maxWidth: 500, minWidth: 300});
+
+          markerCache.set(record.id, marker);
+
+          return marker;
+        }
+
+  // =========================================================
+  // 4. LOAD GEOJSON + BUILD MARKERS
+  // =========================================================
+
+
+    fetch('signs.geojson')
+    .then(res => res.json())
+    .then(data => {
+
+      data.features.forEach((feature, index) => {
 
         // Skip invalid geometries (important for real datasets)
         if (
@@ -299,7 +434,6 @@
 
         // Extract category (used for filtering)
         const category = feature.properties.class;
-        console.log(category)
         const signType =
         feature.properties.rvvCode
             ? String(feature.properties.rvvCode)
@@ -308,14 +442,14 @@
         const panoramax_url = feature.properties.panoramax_url;
         const george_url = feature.properties.george_map_url;
 
+        const blackCode = feature.properties.blackCode;
+
         const direction = feature.properties.direction;
-        console.log(direction)
 
         signTypes.add(signType);
 
-        // Create layer group per category if it doesn't exist
         if (!groups[category]) {
-          groups[category] = L.layerGroup();
+          groups[category] = true;
         }
 
         // Create marker
@@ -323,66 +457,22 @@
         
 
         const color = getMarkerColor(category);
-        console.log(color)
-        const marker = L.marker([lat, lng], {
-                                    icon: createArrowIcon(direction, color)
-                                  })                                                             
 
-        marker.category = category;
-        marker.signType = signType;
-
-        const popupParts = [];
-
-        // Title section
-        popupParts.push(`
-          <div>
-            <strong>${category}</strong><br>
-            rvv code: ${signType}
-          </div>
-        `);
-
-        // Panoramax URL, only if it exists
-        if (
-          panoramax_url &&
-          panoramax_url !== "none" &&
-          panoramax_url !== "None"
-        ) {
-          popupParts.push(`
-            <div>
-              <strong>Panoramax:</strong><br>
-              <a href="${panoramax_url}" target="_blank" rel="noopener noreferrer">
-                ${panoramax_url}
-              </a>
-            </div>
-          `);
-        }
-
-        // George URL, only if it exists
-        if (
-          george_url &&
-          george_url !== "none" &&
-          george_url !== "None"
-        ) {
-          popupParts.push(`
-            <div>
-              <strong>George:</strong><br>
-              <a href="${george_url}" target="_blank" rel="noopener noreferrer">
-                ${george_url}
-              </a>
-            </div>
-          `);
-        }
-
-        marker.bindPopup(popupParts.join("<hr>"));
-
-        // Add marker to correct category group
-        groups[category].addLayer(marker);
-
-        allMarkers.push(marker);
+        featureRecords.push({
+          id: feature.id ?? index,
+          lat,
+          lng,
+          category,
+          signType,
+          panoramax_url,
+          george_url,
+          blackCode,
+          direction,
+          color
+        });
 
       });
 
-  
       // After all data is loaded:
       // 1. build sidebar checkboxes
       // 2. enable filtering
@@ -393,66 +483,67 @@
     })
     ;
 
-
   // =========================================================
-  // 4. SIDEBAR UI (CHECKBOXES + SEARCH)
+  // 5. SIDEBAR UI (CHECKBOXES + SEARCH)
   // =========================================================
 
-  // Create one checkbox per category
+
   function createCheckboxes() {
 
-    const container = document.getElementById("filters");
-    container.innerHTML = "";
+  const container = document.getElementById("filters");
+  container.innerHTML = "";
 
-    Object.keys(groups)
-      .sort()
-      .forEach(cat => {
+  const fragment = document.createDocumentFragment();
 
-        const label = document.createElement("label");
+  Object.keys(groups)
+    .sort()
+    .forEach(cat => {
 
-        label.innerHTML = `
-          <input type="checkbox" value="${cat}">
-          ${cat}
-        `;
+      const label = document.createElement("label");
 
-        container.appendChild(label);
-      });
+      label.innerHTML = `
+        <input type="checkbox" value="${cat}">
+        ${cat}
+      `;
 
-    // Re-run filtering when any checkbox changes
-    container.addEventListener("change", updateFilters);
-  }
+      fragment.appendChild(label);
+    });
+
+  container.appendChild(fragment);
+
+  container.addEventListener("change", updateFilters);
+}
 
 
   function createsignTypeCheckboxes() {
 
-    const container =
-        document.getElementById("signTypeFilters");
+    const container = document.getElementById("signTypeFilters");
 
     container.innerHTML = "";
 
+    const fragment = document.createDocumentFragment();
+
     Array.from(signTypes)
-        .sort()
-        .forEach(signType => {
+      .sort()
+      .forEach(signType => {
 
-            const label =
-                document.createElement("label");
+        const label = document.createElement("label");
 
-            label.innerHTML = `
-                <input
-                    type="checkbox"
-                    value="${signType}"
-                >
-                ${signType}
-            `;
+        label.innerHTML = `
+          <input
+            type="checkbox"
+            value="${signType}"
+          >
+          ${signType}
+        `;
 
-            container.appendChild(label);
-        });
+        fragment.appendChild(label);
+      });
 
-    container.addEventListener(
-        "change",
-        updateFilters
-    );
-}
+    container.appendChild(fragment);
+
+    container.addEventListener("change", updateFilters);
+  }
 
   function filtersignTypeList(e) {
 
@@ -468,7 +559,6 @@
       });
   }
 
-
   // Select or deselect all checkboxes
   function setAll(state) {
 
@@ -478,64 +568,49 @@
     updateFilters();
   }
 
+  function updateFilters() {
 
-  // Update counter in sidebar
-  function updateCounter(selectedCount) {
+    const selectedCategories = new Set(
+      Array.from(
+        document.querySelectorAll("#filters input:checked")
+      ).map(cb => cb.value)
+    );
 
-    document.getElementById("counter").textContent =
-      `${selectedCount} / ${Object.keys(groups).length} selected`;
-  }
+    const selectedsignTypes = new Set(
+      Array.from(
+        document.querySelectorAll("#signTypeFilters input:checked")
+      ).map(cb => cb.value)
+    );
 
+    const minimumMarkerZoom = 15;
 
-function updateFilters() {
-
-  const selectedCategories = new Set(
-    Array.from(
-      document.querySelectorAll("#filters input:checked")
-    ).map(cb => cb.value)
-  );
-
-  const selectedsignTypes = new Set(
-    Array.from(
-      document.querySelectorAll("#signTypeFilters input:checked")
-    ).map(cb => cb.value)
-  );
-
-  console.log("Selected categories:", Array.from(selectedCategories));
-  console.log("Selected signTypes:", Array.from(selectedsignTypes));
-
-  let visibleCount = 0;
-  const visibleMarkers = [];
-
-  allMarkers.forEach(marker => {
-
-    const categoryMatch = selectedCategories.has(marker.category);
-    const signTypeMatch = selectedsignTypes.has(marker.signType);
-
-    const visible = categoryMatch && signTypeMatch;
-
-    if (visible) {
-      visibleCount++;
-      visibleMarkers.push(marker);
-
-      if (!map.hasLayer(marker)) {
-        marker.addTo(map);
-      }
-
-    } else {
-
-      if (map.hasLayer(marker)) {
-        map.removeLayer(marker);
-      }
-
+    if (map.getZoom() < minimumMarkerZoom) {
+      visibleMarkerLayer.clearLayers();
+      return;
     }
-  });
 
-  console.log("Visible markers:", visibleCount);
-  console.log("Visible marker coordinates:", visibleMarkers.map(m => m.getLatLng()));
+    const bounds = map.getBounds().pad(0.1);
 
-  updateCounter(selectedCategories.size);
-}
+    visibleMarkerLayer.clearLayers();
+
+    featureRecords.forEach(record => {
+
+      const categoryMatch = selectedCategories.has(record.category);
+      const signTypeMatch = selectedsignTypes.has(record.signType);
+
+      if (!categoryMatch || !signTypeMatch) {
+        return;
+      }
+
+      if (!bounds.contains([record.lat, record.lng])) {
+        return;
+      }
+
+      const marker = createMarker(record);
+      visibleMarkerLayer.addLayer(marker);
+    });
+
+  }
 
   function updateVisibleCategories(selectedCategories) {
 
@@ -553,7 +628,7 @@ function updateFilters() {
 
 
   // =========================================================
-  // 6. SIDEBAR CONTROLS (EVENTS)
+  // 6. EVENT LISTENERS
   // =========================================================
 
   document.getElementById("toggleSidebar")
@@ -561,6 +636,9 @@ function updateFilters() {
       document.getElementById("sidebar")
         .classList.toggle("closed");
     });
+
+
+  map.on("moveend zoomend", updateFilters);
 
 
   document.getElementById("signTypeSearch")
@@ -592,6 +670,7 @@ function updateFilters() {
 
       updateFilters();
     });
+
 
 </script>
 
