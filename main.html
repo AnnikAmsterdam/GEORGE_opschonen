@@ -1,0 +1,550 @@
+<html>
+<head>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>My First Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- Map + UI styling -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      height: 50px;
+      background: #1f2937;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      text-align: center;
+    }
+
+    #map {
+      position: absolute;
+      top: 50px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+    }
+
+    #sidebar {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: 280px;
+      height: calc(100% - 50px);
+      background: #f9fafb;
+      border-left: 1px solid #ddd;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: transform 0.25s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    #sidebar.closed {
+      transform: translateX(100%);
+    }
+
+    #yearSearch {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+
+    .year-actions {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .year-actions button {
+      width: 100%;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    button {
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+  }
+
+  .actions button {
+    flex: 1;
+  }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #counter {
+      font-size: 12px;
+      margin-bottom: 8px;
+      color: #444;
+    }
+
+    #filters,
+    #yearFilters {
+      /* overflow-y: auto; */
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+      margin-bottom: 15px;
+    }
+
+    #filters label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    #yearFilters {
+    max-height: 200px;
+    overflow-y: auto;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+    margin-top: 10px;
+    }
+
+    #yearFilters label {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    .arrow-marker {
+    background: transparent;
+    border: none;
+    }
+
+    .arrow-wrapper {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .arrow {
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 20px solid;
+    }
+  </style>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""></script>
+
+</head>
+
+<body>
+
+<!-- =========================================================
+     HEADER (title + sidebar toggle)
+========================================================= -->
+<header>
+  Let's tidy up GEORGE!
+  <button id="toggleSidebar">☰ Filters</button>
+</header>
+
+<!-- =========================================================
+     SIDEBAR (filters UI)
+========================================================= -->
+<div id="sidebar">
+
+  <!-- Bulk actions for Type VRI -->
+  <div class="actions">
+    <button id="selectAll">Select all</button>
+    <button id="clearAll">Clear</button>
+  </div>
+
+  <!-- Selection counter -->
+  <div id="counter">0 / 0 selected</div>
+
+  <!-- Category filter -->
+  <h3>Type VRI</h3>
+  <div id="filters"></div>
+
+  <!-- Year filter -->
+  <h3>Jaar van Aanleg</h3>
+
+  <input
+    type="text"
+    id="yearSearch"
+    placeholder="Search years..."
+  />
+
+  <div class="year-actions">
+    <button id="clearYears">Clear</button>
+  </div>
+
+  <div id="yearFilters"></div>
+
+</div>
+
+<!-- =========================================================
+     MAP CONTAINER
+========================================================= -->
+<div id="map"></div>
+
+<!-- =========================================================
+     JAVASCRIPT APPLICATION LOGIC
+========================================================= -->
+<script>
+
+  // =========================================================
+  // 1. INITIAL MAP SETUP
+  // =========================================================
+
+  const map = L.map('map').setView([52.375, 4.89], 12);
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+
+  // =========================================================
+  // 2. DATA STRUCTURES
+  // =========================================================
+
+  // Stores: category -> Leaflet LayerGroup
+  const groups = {};
+  const years = new Set();
+  const allMarkers = [];
+
+    // =========================================================
+  // 3. THE DATA ITSELF
+  // =========================================================
+
+    //const signsC21Data = 
+
+  // =========================================================
+  // 3. LOAD GEOJSON + BUILD MARKERS
+  // =========================================================
+
+  //fetch('vri.geojson') // https://maps.amsterdam.nl/open_geodata/?k=182
+    fetch('signs_C21.geojson')
+    .then(res => res.json())
+    .then(data => {
+
+    function getMarkerColor(cat) {
+        if (cat === "match") return "green";
+        if (cat === "only_panoramax") return "red";
+        if (cat === "only_george") return "blue";
+        return "gray";
+        }
+
+    function createArrowIcon(direction, color) {
+        return L.divIcon({
+          className: "arrow-marker",
+          html: `
+            <div class="arrow-wrapper">
+              <div class="arrow" style="transform: rotate(${direction}deg); border-bottom-color: ${color};"></div>
+            </div>
+          `,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        });
+      }
+
+      //const data = signsC21Data;
+
+      data.features.forEach(feature => {
+
+        // Skip invalid geometries (important for real datasets)
+        if (
+          !feature.geometry ||
+          feature.geometry.type !== 'Point' ||
+          !Array.isArray(feature.geometry.coordinates)
+        ) {
+          console.warn('Skipping invalid feature:', feature);
+          return;
+        }
+
+        // Extract category (used for filtering)
+        const category = feature.properties.class;
+        console.log(category)
+        const year =
+        feature.properties.rvvCode
+            ? String(feature.properties.rvvCode)
+            : "Unknown";
+
+        const my_url = feature.properties.panoramax_url;
+
+        const direction = feature.properties.direction;
+        console.log(direction)
+
+        years.add(year);
+
+        // Create layer group per category if it doesn't exist
+        if (!groups[category]) {
+          groups[category] = L.layerGroup();
+        }
+
+        // Create marker
+        const [lng, lat] = feature.geometry.coordinates;
+        
+
+        const color = getMarkerColor(category);
+        console.log(color)
+        const marker = L.marker([lat, lng], {
+                                    icon: createArrowIcon(direction, color)
+                                  })                                                             
+
+        marker.category = category;
+        marker.year = year;
+
+        marker.bindPopup(`<a href="${my_url}" target="_blank" rel="noopener noreferrer">${my_url}</a>`);
+
+        // Add marker to correct category group
+        groups[category].addLayer(marker);
+
+        allMarkers.push(marker);
+
+      });
+
+  
+      // After all data is loaded:
+      // 1. build sidebar checkboxes
+      // 2. enable filtering
+      createCheckboxes();
+      createYearCheckboxes();
+      updateFilters();
+
+    })
+    ;
+
+
+  // =========================================================
+  // 4. SIDEBAR UI (CHECKBOXES + SEARCH)
+  // =========================================================
+
+  // Create one checkbox per category
+  function createCheckboxes() {
+
+    const container = document.getElementById("filters");
+    container.innerHTML = "";
+
+    Object.keys(groups)
+      .sort()
+      .forEach(cat => {
+
+        const label = document.createElement("label");
+
+        label.innerHTML = `
+          <input type="checkbox" value="${cat}">
+          ${cat}
+        `;
+
+        container.appendChild(label);
+      });
+
+    // Re-run filtering when any checkbox changes
+    container.addEventListener("change", updateFilters);
+  }
+
+
+  function createYearCheckboxes() {
+
+    const container =
+        document.getElementById("yearFilters");
+
+    container.innerHTML = "";
+
+    Array.from(years)
+        .sort()
+        .forEach(year => {
+
+            const label =
+                document.createElement("label");
+
+            label.innerHTML = `
+                <input
+                    type="checkbox"
+                    value="${year}"
+                >
+                ${year}
+            `;
+
+            container.appendChild(label);
+        });
+
+    container.addEventListener(
+        "change",
+        updateFilters
+    );
+}
+
+  function filterYearList(e) {
+
+    const q = e.target.value.toLowerCase();
+
+    document.querySelectorAll("#yearFilters label")
+      .forEach(label => {
+
+        label.style.display =
+          label.textContent.toLowerCase().includes(q)
+            ? "block"
+            : "none";
+      });
+  }
+
+
+  // Select or deselect all checkboxes
+  function setAll(state) {
+
+    document.querySelectorAll("#filters input")
+      .forEach(cb => cb.checked = state);
+
+    updateFilters();
+  }
+
+
+  // Update counter in sidebar
+  function updateCounter(selectedCount) {
+
+    document.getElementById("counter").textContent =
+      `${selectedCount} / ${Object.keys(groups).length} selected`;
+  }
+
+
+function updateFilters() {
+
+  const selectedCategories = new Set(
+    Array.from(
+      document.querySelectorAll("#filters input:checked")
+    ).map(cb => cb.value)
+  );
+
+  const selectedYears = new Set(
+    Array.from(
+      document.querySelectorAll("#yearFilters input:checked")
+    ).map(cb => cb.value)
+  );
+
+  console.log("Selected categories:", Array.from(selectedCategories));
+  console.log("Selected years:", Array.from(selectedYears));
+
+  let visibleCount = 0;
+  const visibleMarkers = [];
+
+  allMarkers.forEach(marker => {
+
+    const categoryMatch = selectedCategories.has(marker.category);
+    const yearMatch = selectedYears.has(marker.year);
+
+    const visible = categoryMatch && yearMatch;
+
+    if (visible) {
+      visibleCount++;
+      visibleMarkers.push(marker);
+
+      if (!map.hasLayer(marker)) {
+        marker.addTo(map);
+      }
+
+    } else {
+
+      if (map.hasLayer(marker)) {
+        map.removeLayer(marker);
+      }
+
+    }
+  });
+
+  console.log("Visible markers:", visibleCount);
+  console.log("Visible marker coordinates:", visibleMarkers.map(m => m.getLatLng()));
+
+  updateCounter(selectedCategories.size);
+}
+
+  function updateVisibleCategories(selectedCategories) {
+
+    const selected = new Set(selectedCategories);
+
+    Object.entries(groups).forEach(([category, group]) => {
+
+      if (selected.has(category)) {
+        group.addTo(map);
+      } else {
+        map.removeLayer(group);
+      }
+    });
+  }
+
+
+  // =========================================================
+  // 6. SIDEBAR CONTROLS (EVENTS)
+  // =========================================================
+
+  document.getElementById("toggleSidebar")
+    .addEventListener("click", () => {
+      document.getElementById("sidebar")
+        .classList.toggle("closed");
+    });
+
+
+  document.getElementById("yearSearch")
+  .addEventListener("input", filterYearList);
+
+
+  document.getElementById("clearYears")
+    .addEventListener("click", () => {
+      document.querySelectorAll("#yearFilters input")
+        .forEach(cb => cb.checked = false);
+
+      updateFilters();
+    });
+
+
+  document.getElementById("selectAll")
+    .addEventListener("click", () => {
+      document.querySelectorAll("#filters input")
+        .forEach(cb => cb.checked = true);
+
+      updateFilters();
+    });
+
+
+  document.getElementById("clearAll")
+    .addEventListener("click", () => {
+      document.querySelectorAll("#filters input")
+        .forEach(cb => cb.checked = false);
+
+      updateFilters();
+    });
+
+</script>
+
+</body>
+</html>
