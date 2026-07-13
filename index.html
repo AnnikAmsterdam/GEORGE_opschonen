@@ -45,7 +45,7 @@
       position: absolute;
       top: 50px;
       right: 0;
-      width: 280px;
+      width: 300x;
       height: calc(100% - 50px);
       background: #f9fafb;
       border-left: 1px solid #ddd;
@@ -105,7 +105,7 @@
       /* overflow-y: auto; */
       border-top: 1px solid #ddd;
       padding-top: 8px;
-      margin-bottom: 15px;
+      margin-bottom: 60px;
     }
 
     #filters label {
@@ -239,7 +239,7 @@
   <div id="filters"></div>
 
   <!-- signType filter -->
-  <h3>Kies bordtype(s):</h3>
+  <h3>Kies RVV-code(s):</h3>
 
   <input
     type="text"
@@ -293,7 +293,6 @@
   // Stores: category -> Leaflet LayerGroup
   const groups = {};
   const signTypes = new Set();
-  // const allMarkers = [];
 
   const featureRecords = [];
   const markerCache = new Map();
@@ -310,6 +309,14 @@
         if (cat === "only_george") return "blue";
         return "gray";
         }
+
+
+    function getStatusLabel(cat) {
+      if (cat === "only_george") return "alleen in GEORGE gevonden";
+      if (cat === "only_panoramax") return "alleen op de panoramafoto's gevonden";
+      if (cat === "match") return "in beide bronnen gevonden";
+      return cat;
+    }
 
 
     function hasValue(value) {
@@ -380,7 +387,7 @@
 
           popupParts.push(`
             <div>
-              <strong>${record.category}</strong><br>
+              <strong>${getStatusLabel(record.category)}</strong><br>
               rvv code: ${record.signType}
             </div>
           `);
@@ -508,7 +515,7 @@ function createCheckboxes() {
       checkbox.type = "checkbox";
       checkbox.value = cat;
 
-      const text = document.createTextNode(` ${cat} `);
+      const text = document.createTextNode(` ${getStatusLabel(cat)} `);
 
       const colorDot = document.createElement("span");
       colorDot.className = "status-color";
