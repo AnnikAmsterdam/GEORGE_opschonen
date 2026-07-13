@@ -178,12 +178,15 @@
         z-index: 2;
       }
 
-    /* .marker-signType-image {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      margin-bottom: 2px;
-    } */
+      .status-color {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 6px;
+        vertical-align: middle;
+        border: 1px solid #999;
+      }
 
     .arrow-wrapper {
       width: 30px;
@@ -488,7 +491,7 @@
   // =========================================================
 
 
-  function createCheckboxes() {
+function createCheckboxes() {
 
   const container = document.getElementById("filters");
   container.innerHTML = "";
@@ -501,10 +504,20 @@
 
       const label = document.createElement("label");
 
-      label.innerHTML = `
-        <input type="checkbox" value="${cat}">
-        ${cat}
-      `;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = cat;
+
+      const text = document.createTextNode(` ${cat} `);
+
+      const colorDot = document.createElement("span");
+      colorDot.className = "status-color";
+      colorDot.style.backgroundColor = getMarkerColor(cat);
+      colorDot.title = getMarkerColor(cat);
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      label.appendChild(colorDot);
 
       fragment.appendChild(label);
     });
