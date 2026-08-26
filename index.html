@@ -210,6 +210,8 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""></script>
 
+  <!-- <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script> -->
+
 </head>
 
 <body>
@@ -285,6 +287,24 @@
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
   }).addTo(map);
 
+  // const speedLimitsLayer = L.vectorGrid.protobuf(
+  // "https://maps.ndw.nu/api/v1/wkdSpeedLimits/latest/mbtiles/segments/tiles/{z}/{x}/{y}.pbf",
+  //   {
+  //     vectorTileLayerStyles: {
+  //       segments: {
+  //         weight: 3,
+  //         color: "#0078ff",
+  //         opacity: 0.8
+  //       }
+  //     },
+
+  //     interactive: true,
+
+  //     maxNativeZoom: 14,
+  //     maxZoom: 19
+  //   }
+  // ).addTo(map);
+
 
   // =========================================================
   // 2. DATA STRUCTURES
@@ -305,14 +325,16 @@
 
       function getMarkerColor(cat) {
         if (cat === "match") return "green";
-        if (cat === "only_panoramax") return "red";
+        if (cat === "only_panoramax") return "yellow";
         if (cat === "only_george") return "blue";
+        if (cat === "only_george_with_a_reason") return "red";
         return "gray";
         }
 
 
     function getStatusLabel(cat) {
       if (cat === "only_george") return "alleen in GEORGE gevonden";
+      if (cat === "only_george_with_a_reason") return "alleen in GEORGE gevonden, geen panoramafoto!";
       if (cat === "only_panoramax") return "alleen op de panoramafoto's gevonden";
       if (cat === "match") return "in beide bronnen gevonden";
       return cat;
@@ -395,9 +417,20 @@
           if (hasValue(record.panoramax_url)) {
             popupParts.push(`
               <div>
-                <strong>Panoramax:</strong><br>
+                <strong>Panoramaxfoto in de buurt van GEORGE-bord:</strong><br>
                 <a href="${record.panoramax_url}" target="_blank" rel="noopener noreferrer">
                   ${record.panoramax_url}
+                </a>
+              </div>
+            `);
+          }
+
+          if (hasValue(record.panoramax_link)) {
+            popupParts.push(`
+              <div>
+                <strong>Panoramaxfoto van bord:</strong><br>
+                <a href="${record.panoramax_link}" target="_blank" rel="noopener noreferrer">
+                  ${record.panoramax_link}
                 </a>
               </div>
             `);
@@ -406,7 +439,7 @@
           if (hasValue(record.george_url)) {
             popupParts.push(`
               <div>
-                <strong>George:</strong><br>
+                <strong>NWD-link naar GEORGE-bord:</strong><br>
                 <a href="${record.george_url}" target="_blank" rel="noopener noreferrer">
                   ${record.george_url}
                 </a>
@@ -426,7 +459,7 @@
   // =========================================================
 
 
-    fetch('signs.geojson')
+    fetch('signs_new.geojson')
     .then(res => res.json())
     .then(data => {
 
@@ -443,14 +476,21 @@
         }
 
         // Extract category (used for filtering)
-        const category = feature.properties.class;
+        let category = feature.properties.class;
         const signType =
         feature.properties.rvvCode
             ? String(feature.properties.rvvCode)
             : "onbekend";
 
+        const panoramax_link = feature.properties.panoramax_link;
         const panoramax_url = feature.properties.panoramax_url;
         const george_url = feature.properties.george_map_url;
+
+        const line_id = feature.properties.line_id;
+
+        if (category === "only_george" && line_id == 'not_seen_by_panoramax') {
+          category = "only_george_with_a_reason";
+        }
 
         const blackCode = feature.properties.blackCode;
 
@@ -474,6 +514,7 @@
           lng,
           category,
           signType,
+          panoramax_link,
           panoramax_url,
           george_url,
           blackCode,
