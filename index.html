@@ -459,7 +459,7 @@
   // =========================================================
 
 
-    fetch('signs_new.geojson')
+    fetch('comparison_pan_george_test.geojson')
     .then(res => res.json())
     .then(data => {
 
@@ -643,12 +643,12 @@ function createCheckboxes() {
       ).map(cb => cb.value)
     );
 
-    const minimumMarkerZoom = 15;
+    // const minimumMarkerZoom = 15;
 
-    if (map.getZoom() < minimumMarkerZoom) {
-      visibleMarkerLayer.clearLayers();
-      return;
-    }
+    // if (map.getZoom() < minimumMarkerZoom) {
+    //   visibleMarkerLayer.clearLayers();
+    //   return;
+    // }
 
     const bounds = map.getBounds().pad(0.1);
 
