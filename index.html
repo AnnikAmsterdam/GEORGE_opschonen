@@ -1,6 +1,6 @@
-<html>
+<!DOCTYPE html>
+<html lang="nl">
 <head>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -12,206 +12,29 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 
+  <!-- Leaflet.markercluster CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
   <!-- Map + UI styling -->
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    header {
-      height: 50px;
-      background: #1f2937;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      text-align: center;
-    }
-
-    #map {
-      position: absolute;
-      top: 50px;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1;
-    }
-
-    #sidebar {
-      position: absolute;
-      top: 50px;
-      right: 0;
-      width: 300x;
-      height: calc(100% - 50px);
-      background: #f9fafb;
-      border-left: 1px solid #ddd;
-      padding: 10px;
-      box-sizing: border-box;
-      overflow: hidden;
-      transition: transform 0.25s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-
-    #sidebar.closed {
-      transform: translateX(100%);
-    }
-
-    #signTypeSearch {
-      width: 100%;
-      padding: 6px;
-      margin-bottom: 8px;
-      box-sizing: border-box;
-    }
-
-    .signType-actions {
-      display: flex;
-      margin-bottom: 8px;
-    }
-
-    .signType-actions button {
-      width: 100%;
-    }
-
-    .actions {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    button {
-    padding: 6px;
-    border: none;
-    border-radius: 6px;
-    background: #2563eb;
-    color: white;
-    cursor: pointer;
-  }
-
-  .actions button {
-    flex: 1;
-  }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    #filters,
-    #signTypeFilters {
-      /* overflow-y: auto; */
-      border-top: 1px solid #ddd;
-      padding-top: 8px;
-      margin-bottom: 60px;
-    }
-
-    #filters label {
-      display: block;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    #signTypeFilters {
-    max-height: 200px;
-    overflow-y: auto;
-    border-top: 1px solid #ddd;
-    padding-top: 8px;
-    margin-top: 10px;
-    }
-
-    #signTypeFilters label {
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    header {
-      text-align: center;
-    }
-
-    .arrow-marker {
-      background: transparent;
-      border: none;
-    }
-
-    .marker-wrapper {
-      width: 44px;
-      height: 58px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .marker-image-wrapper {
-        position: relative;
-        width: 28px;
-        height: 28px;
-        margin-bottom: 2px;
-      }
-
-      .marker-signType-image {
-        width: 28px;
-        height: 28px;
-        object-fit: contain;
-        display: block;
-        position: absolute;
-        z-index: 1;
-      }
-
-      .marker-black-code {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        
-        color: black;
-        font-size: 10px;
-        font-weight: bold;
-        line-height: 1;
-        text-align: center;
-
-        pointer-events: none;
-        white-space: nowrap;
-        z-index: 2;
-      }
-
-      .status-color {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-left: 6px;
-        vertical-align: middle;
-        border: 1px solid #999;
-      }
-
-    .arrow-wrapper {
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .arrow {
-      width: 0;
-      height: 0;
-      border-left: 8px solid transparent;
-      border-right: 8px solid transparent;
-      border-bottom: 20px solid;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""></script>
 
-  <!-- <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script> -->
+  <!-- Leaflet.markercluster JS (groups nearby markers) -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
+  <!-- Leaflet.VectorGrid JS (draws the NDW wegvakken vector tiles) -->
+  <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
 </head>
 
 <body>
@@ -229,31 +52,40 @@
 ========================================================= -->
 <div id="sidebar">
 
-    <h3>Kies status:</h3>
+  <!-- Status filter -->
+  <h3>Kies status:</h3>
 
-  <!-- Bulk actions for choosing sources -->
   <div class="actions">
-    <button id="selectAll">Selecteer alles</button>
-    <button id="clearAll">Deselecteer alles</button>
+    <button id="selectAllStatuses">Selecteer alles</button>
+    <button id="clearAllStatuses">Deselecteer alles</button>
   </div>
 
-  <!-- Category filter -->
-  <div id="filters"></div>
+  <div id="statusFilters"></div>
 
-  <!-- signType filter -->
+  <!-- RVV-code filter -->
   <h3>Kies RVV-code(s):</h3>
 
   <input
     type="text"
-    id="signTypeSearch"
+    id="rvvCodeSearch"
     placeholder="Zoek in lijst..."
   />
 
-  <div class="signType-actions">
-    <button id="clearsignTypes">Deselecteer alles</button>
+  <div class="rvvCode-actions">
+    <button id="clearRvvCodes">Deselecteer alles</button>
   </div>
 
-  <div id="signTypeFilters"></div>
+  <div id="rvvCodeFilters"></div>
+
+  <!-- NDW wegvakken -->
+  <h3>NDW-wegvakken:</h3>
+
+  <label class="wegvak-toggle">
+    <input type="checkbox" id="showWegvakken">
+    Toon NDW-wegvakken
+  </label>
+
+  <div id="wegvakInfo"></div>
 
 </div>
 
@@ -261,479 +93,13 @@
      MAP CONTAINER
 ========================================================= -->
 <div id="map"></div>
+<div id="mapMessage" hidden></div>
 
 <!-- =========================================================
      JAVASCRIPT APPLICATION LOGIC
 ========================================================= -->
-<script>
-
-  // =========================================================
-  // 1. INITIAL MAP SETUP
-  // =========================================================
-
-  const map = L.map('map', {
-  attributionControl: false,
-  maxZoom: 22
-  }).setView([52.37, 4.91], 15);
-
-  L.control.attribution({
-    position: 'bottomleft',
-    prefix: '<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>'
-  }).addTo(map);
-
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxNativeZoom: 19, // open street map only supports up to max zoom 19
-    maxZoom: 22, // leaflet can zoom in further than 19, but will get a bit blurry
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
-  }).addTo(map);
-
-  // const speedLimitsLayer = L.vectorGrid.protobuf(
-  // "https://maps.ndw.nu/api/v1/wkdSpeedLimits/latest/mbtiles/segments/tiles/{z}/{x}/{y}.pbf",
-  //   {
-  //     vectorTileLayerStyles: {
-  //       segments: {
-  //         weight: 3,
-  //         color: "#0078ff",
-  //         opacity: 0.8
-  //       }
-  //     },
-
-  //     interactive: true,
-
-  //     maxNativeZoom: 14,
-  //     maxZoom: 19
-  //   }
-  // ).addTo(map);
-
-
-  // =========================================================
-  // 2. DATA STRUCTURES
-  // =========================================================
-
-  // Stores: category -> Leaflet LayerGroup
-  const groups = {};
-  const signTypes = new Set();
-
-  const featureRecords = [];
-  const markerCache = new Map();
-  const visibleMarkerLayer = L.layerGroup().addTo(map);
-
-
-  // =========================================================
-  // 3. HELPER FUNCTIONS TO CREATE MARKERS
-  // =========================================================
-
-      function getMarkerColor(cat) {
-        if (cat === "match") return "green";
-        if (cat === "only_panoramax") return "yellow";
-        if (cat === "only_george") return "blue";
-        if (cat === "only_george_with_a_reason") return "red";
-        return "gray";
-        }
-
-
-    function getStatusLabel(cat) {
-      if (cat === "only_george") return "alleen in GEORGE gevonden";
-      if (cat === "only_george_with_a_reason") return "alleen in GEORGE gevonden, geen panoramafoto!";
-      if (cat === "only_panoramax") return "alleen op de panoramafoto's gevonden";
-      if (cat === "match") return "in beide bronnen gevonden";
-      return cat;
-    }
-
-
-    function hasValue(value) {
-      return (
-        value !== null &&
-        value !== undefined &&
-        String(value).trim() !== "" &&
-        String(value).toLowerCase() !== "none"
-      );
-    }
-
-    function createArrowIcon(direction, color, signType, blackCode) {
-
-        const imagePath = `svg_verkeersborden/${encodeURIComponent(signType)}.svg`;
-
-        const blackCodeHtml = hasValue(blackCode)
-          ? `<span class="marker-black-code">${blackCode}</span>`
-          : "";
-
-        return L.divIcon({
-          className: "arrow-marker",
-          html: `
-            <div class="marker-wrapper">
-
-              <div class="marker-image-wrapper">
-                <img
-                  class="marker-signType-image"
-                  src="${imagePath}"
-                  alt="${signType}"
-                  onerror="this.style.display='none';"
-                >
-                ${blackCodeHtml}
-              </div>
-
-              <div class="arrow-wrapper">
-                <div
-                  class="arrow"
-                  style="transform: rotate(${direction}deg); border-bottom-color: ${color};"
-                ></div>
-              </div>
-
-            </div>
-          `,
-          iconSize: [44, 58],
-          iconAnchor: [22, 43]
-        });
-      }
-
-      function createMarker(record) {
-
-          if (markerCache.has(record.id)) {
-            return markerCache.get(record.id);
-          }
-
-          const marker = L.marker([record.lat, record.lng], {
-            icon: createArrowIcon(
-              record.direction,
-              record.color,
-              record.signType,
-              record.blackCode
-            )
-          });
-
-          marker.category = record.category;
-          marker.signType = record.signType;
-
-          const popupParts = [];
-
-          popupParts.push(`
-            <div>
-              <strong>${getStatusLabel(record.category)}</strong><br>
-              rvv code: ${record.signType}
-            </div>
-          `);
-
-          if (hasValue(record.panoramax_url)) {
-            popupParts.push(`
-              <div>
-                <strong>Panoramaxfoto van bord:</strong><br>
-                <a href="${record.panoramax_url}" target="_blank" rel="noopener noreferrer">
-                  ${record.panoramax_url}
-                </a>
-              </div>
-            `);
-          }
-
-          if (hasValue(record.panoramax_link)) {
-            popupParts.push(`
-              <div>
-                <strong>Panoramaxfoto in de buurt van GEORGE-bord:</strong><br>
-                <a href="${record.panoramax_link}" target="_blank" rel="noopener noreferrer">
-                  ${record.panoramax_link}
-                </a>
-              </div>
-            `);
-          }
-
-          if (hasValue(record.george_url)) {
-            popupParts.push(`
-              <div>
-                <strong>NWD-link naar GEORGE-bord:</strong><br>
-                <a href="${record.george_url}" target="_blank" rel="noopener noreferrer">
-                  ${record.george_url}
-                </a>
-              </div>
-            `);
-          }
-
-          marker.bindPopup(popupParts.join("<hr>"), {maxWidth: 500, minWidth: 300});
-
-          markerCache.set(record.id, marker);
-
-          return marker;
-        }
-
-  // =========================================================
-  // 4. LOAD GEOJSON + BUILD MARKERS
-  // =========================================================
-
-
-    fetch('signs_new.geojson')
-    .then(res => res.json())
-    .then(data => {
-
-      data.features.forEach((feature, index) => {
-
-        // Skip invalid geometries (important for real datasets)
-        if (
-          !feature.geometry ||
-          feature.geometry.type !== 'Point' ||
-          !Array.isArray(feature.geometry.coordinates)
-        ) {
-          console.warn('Skipping invalid feature:', feature);
-          return;
-        }
-
-        // Extract category (used for filtering)
-        let category = feature.properties.class;
-        const signType =
-        feature.properties.rvvCode
-            ? String(feature.properties.rvvCode)
-            : "onbekend";
-
-        const panoramax_link = feature.properties.panoramax_link;
-        const panoramax_url = feature.properties.panoramax_url;
-        const george_url = feature.properties.george_map_url;
-
-        const line_id = feature.properties.line_id;
-
-        if (category === "only_george" && line_id == 'not_seen_by_panoramax') {
-          category = "only_george_with_a_reason";
-        }
-
-        const blackCode = feature.properties.blackCode;
-
-        const direction = feature.properties.direction;
-
-        signTypes.add(signType);
-
-        if (!groups[category]) {
-          groups[category] = true;
-        }
-
-        // Create marker
-        const [lng, lat] = feature.geometry.coordinates;
-        
-
-        const color = getMarkerColor(category);
-
-        featureRecords.push({
-          id: feature.id ?? index,
-          lat,
-          lng,
-          category,
-          signType,
-          panoramax_link,
-          panoramax_url,
-          george_url,
-          blackCode,
-          direction,
-          color
-        });
-
-      });
-
-      // After all data is loaded:
-      // 1. build sidebar checkboxes
-      // 2. enable filtering
-      createCheckboxes();
-      createsignTypeCheckboxes();
-      updateFilters();
-
-    })
-    ;
-
-  // =========================================================
-  // 5. SIDEBAR UI (CHECKBOXES + SEARCH)
-  // =========================================================
-
-
-function createCheckboxes() {
-
-  const container = document.getElementById("filters");
-  container.innerHTML = "";
-
-  const fragment = document.createDocumentFragment();
-
-  Object.keys(groups)
-    .sort()
-    .forEach(cat => {
-
-      const label = document.createElement("label");
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.value = cat;
-
-      const text = document.createTextNode(` ${getStatusLabel(cat)} `);
-
-      const colorDot = document.createElement("span");
-      colorDot.className = "status-color";
-      colorDot.style.backgroundColor = getMarkerColor(cat);
-      colorDot.title = getMarkerColor(cat);
-
-      label.appendChild(checkbox);
-      label.appendChild(text);
-      label.appendChild(colorDot);
-
-      fragment.appendChild(label);
-    });
-
-  container.appendChild(fragment);
-
-  container.addEventListener("change", updateFilters);
-}
-
-
-  function createsignTypeCheckboxes() {
-
-    const container = document.getElementById("signTypeFilters");
-
-    container.innerHTML = "";
-
-    const fragment = document.createDocumentFragment();
-
-    Array.from(signTypes)
-      .sort()
-      .forEach(signType => {
-
-        const label = document.createElement("label");
-
-        label.innerHTML = `
-          <input
-            type="checkbox"
-            value="${signType}"
-          >
-          ${signType}
-        `;
-
-        fragment.appendChild(label);
-      });
-
-    container.appendChild(fragment);
-
-    container.addEventListener("change", updateFilters);
-  }
-
-  function filtersignTypeList(e) {
-
-    const q = e.target.value.toLowerCase();
-
-    document.querySelectorAll("#signTypeFilters label")
-      .forEach(label => {
-
-        label.style.display =
-          label.textContent.toLowerCase().includes(q)
-            ? "block"
-            : "none";
-      });
-  }
-
-  // Select or deselect all checkboxes
-  function setAll(state) {
-
-    document.querySelectorAll("#filters input")
-      .forEach(cb => cb.checked = state);
-
-    updateFilters();
-  }
-
-  function updateFilters() {
-
-    const selectedCategories = new Set(
-      Array.from(
-        document.querySelectorAll("#filters input:checked")
-      ).map(cb => cb.value)
-    );
-
-    const selectedsignTypes = new Set(
-      Array.from(
-        document.querySelectorAll("#signTypeFilters input:checked")
-      ).map(cb => cb.value)
-    );
-
-    // const minimumMarkerZoom = 15;
-
-    // if (map.getZoom() < minimumMarkerZoom) {
-    //   visibleMarkerLayer.clearLayers();
-    //   return;
-    // }
-
-    const bounds = map.getBounds().pad(0.1);
-
-    visibleMarkerLayer.clearLayers();
-
-    featureRecords.forEach(record => {
-
-      const categoryMatch = selectedCategories.has(record.category);
-      const signTypeMatch = selectedsignTypes.has(record.signType);
-
-      if (!categoryMatch || !signTypeMatch) {
-        return;
-      }
-
-      if (!bounds.contains([record.lat, record.lng])) {
-        return;
-      }
-
-      const marker = createMarker(record);
-      visibleMarkerLayer.addLayer(marker);
-    });
-
-  }
-
-  function updateVisibleCategories(selectedCategories) {
-
-    const selected = new Set(selectedCategories);
-
-    Object.entries(groups).forEach(([category, group]) => {
-
-      if (selected.has(category)) {
-        group.addTo(map);
-      } else {
-        map.removeLayer(group);
-      }
-    });
-  }
-
-
-  // =========================================================
-  // 6. EVENT LISTENERS
-  // =========================================================
-
-  document.getElementById("toggleSidebar")
-    .addEventListener("click", () => {
-      document.getElementById("sidebar")
-        .classList.toggle("closed");
-    });
-
-
-  map.on("moveend zoomend", updateFilters);
-
-
-  document.getElementById("signTypeSearch")
-  .addEventListener("input", filtersignTypeList);
-
-
-  document.getElementById("clearsignTypes")
-    .addEventListener("click", () => {
-      document.querySelectorAll("#signTypeFilters input")
-        .forEach(cb => cb.checked = false);
-
-      updateFilters();
-    });
-
-
-  document.getElementById("selectAll")
-    .addEventListener("click", () => {
-      document.querySelectorAll("#filters input")
-        .forEach(cb => cb.checked = true);
-
-      updateFilters();
-    });
-
-
-  document.getElementById("clearAll")
-    .addEventListener("click", () => {
-      document.querySelectorAll("#filters input")
-        .forEach(cb => cb.checked = false);
-
-      updateFilters();
-    });
-
-
-</script>
+<script src="app.js"></script>
+<script src="wegvakken.js"></script>
 
 </body>
 </html>
