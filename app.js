@@ -51,20 +51,11 @@ L.control.attribution({
   prefix: '<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>',
 }).addTo(map);
 
-// Basemap: NDW's own vector style (PDOK BRT/BGT/BAG + NWB wegvakken),
-// rendered by MapLibre GL inside Leaflet.
-const NDW_BASEMAP_STYLE = "https://maps.ndw.nu/styles/ndw-basemap/lib/style/style.json";
-
-// The plugin normally builds the attribution from the style's sources,
-// which lists NDW twice; customAttribution replaces that with one line.
-L.maplibreGL({
-  style: NDW_BASEMAP_STYLE,
-  attributionControl: {
-    customAttribution:
-      '&copy; <a href="https://maps.ndw.nu/" target="_blank" rel="noopener noreferrer">NDW</a>, ' +
-      '<a href="https://api.pdok.nl/" target="_blank" rel="noopener noreferrer">PDOK</a>, ' +
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
-  },
+// Basemap: OpenStreetMap raster tiles
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxNativeZoom: 19, // OpenStreetMap only supports up to zoom 19
+  maxZoom: 22,       // Leaflet can zoom in further, but tiles get a bit blurry
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
 }).addTo(map);
 
 
