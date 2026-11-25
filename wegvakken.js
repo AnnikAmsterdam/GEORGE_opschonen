@@ -175,7 +175,7 @@ const wegvakLayerOptions = {
   minZoom: WEGVAK_MIN_ZOOM,
   maxZoom: 22,
   maxNativeZoom: NDW_MAX_TILE_ZOOM,
-  attribution: '&copy; <a href="https://www.ndw.nu/" target="_blank" rel="noopener noreferrer">NDW</a>',
+  // No attribution here: the basemap in app.js already credits NDW.
 };
 
 // Base layer: all NWB wegvakken as thin grey lines

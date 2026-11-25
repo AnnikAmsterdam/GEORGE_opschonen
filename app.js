@@ -40,6 +40,9 @@ function getStatusLabel(status) {
 
 const map = L.map("map", {
   attributionControl: false,
+  // Set explicitly: otherwise Leaflet borrows the minZoom of layers on the
+  // map (the wegvakken layers use 14) and you can't zoom out past it.
+  minZoom: 0,
   maxZoom: 22,
 }).setView([52.37, 4.91], 15);
 
@@ -48,10 +51,20 @@ L.control.attribution({
   prefix: '<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>',
 }).addTo(map);
 
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxNativeZoom: 19, // OpenStreetMap only supports up to zoom 19
-  maxZoom: 22,       // Leaflet can zoom in further, but tiles get a bit blurry
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
+// Basemap: NDW's own vector style (PDOK BRT/BGT/BAG + NWB wegvakken),
+// rendered by MapLibre GL inside Leaflet.
+const NDW_BASEMAP_STYLE = "https://maps.ndw.nu/styles/ndw-basemap/lib/style/style.json";
+
+// The plugin normally builds the attribution from the style's sources,
+// which lists NDW twice; customAttribution replaces that with one line.
+L.maplibreGL({
+  style: NDW_BASEMAP_STYLE,
+  attributionControl: {
+    customAttribution:
+      '&copy; <a href="https://maps.ndw.nu/" target="_blank" rel="noopener noreferrer">NDW</a>, ' +
+      '<a href="https://api.pdok.nl/" target="_blank" rel="noopener noreferrer">PDOK</a>, ' +
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
+  },
 }).addTo(map);
 
 
@@ -186,7 +199,7 @@ function createPopupContent(record) {
   const links = [
     ["Panoramaxfoto van bord:", record.panoramaxUrl],
     ["Panoramaxfoto in de buurt van GEORGE-bord:", record.panoramaxLink],
-    ["NWD-link naar GEORGE-bord:", record.georgeUrl],
+    ["NDW-link naar GEORGE-bord:", record.georgeUrl],
   ];
 
   links.forEach(([title, url]) => {
@@ -515,6 +528,15 @@ function updateFilters() {
 
   const selectedStatuses = getCheckedValues("#statusFilters input:checked");
   const selectedRvvCodes = getCheckedValues("#rvvCodeFilters .rvvCode-checkbox:checked");
+
+  // Old minimum-zoom check from before clustering. Probably no longer
+  // needed now that markercluster keeps the map fast when zoomed out.
+  // const minimumMarkerZoom = 15;
+
+  // if (map.getZoom() < minimumMarkerZoom) {
+  //   visibleMarkerLayer.clearLayers();
+  //   return;
+  // }
 
   const wantedRecords = featureRecords.filter(record =>
     selectedStatuses.has(record.status) && selectedRvvCodes.has(record.rvvCode)
